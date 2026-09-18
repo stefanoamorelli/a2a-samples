@@ -114,7 +114,7 @@ cd samples/python/hosts/cli && uv run . --agent http://localhost:8083
 ```
 
 | variable | default | meaning |
-|---|---|---|
+| --- | --- | --- |
 | `HOST_ROUTER` | `llm` | `llm` or `jev`; `--router` overrides it |
 | `TYPESAFE_API_KEY` | | required for `jev` |
 | `SYSTEM_ONE_MODEL`, `SYSTEM_ONE_BASE_URL` | `jev-latest`, `https://api.typesafe.ai` | pin a version once you tune anything on the confidence |
@@ -131,7 +131,7 @@ prices, $0.042 per million input tokens for Jev with free output, $0.30 in and $
 million for Gemini 2.5 Flash with default thinking:
 
 | metric | Jev (`jev-latest`, resolved `jev-1.13.0`) | Gemini 2.5 Flash, structured output |
-|---|---|---|
+| --- | --- | --- |
 | accuracy, 52 requests | 98% | 98% |
 | abstains on the 8 requests nothing covers | 100% | 100% |
 | mean confidence when right / wrong | 0.99 / 0.91 | 1.00 / 0.90 |
@@ -147,7 +147,7 @@ committed as `eval/hosts.json`; the airbnb agent answers `input-required` when i
 dates or guests, which is a normal A2A state:
 
 | request | host --router llm (Gemini) | host --router jev |
-|---|---|---|
+| --- | --- | --- |
 | What is the weather like in LA, CA this weekend? | completed → Weather (7.3 s, 2418 tok) | completed → Weather (4.0 s, 448 tok) |
 | Is it going to rain in Porto tomorrow? | completed → Weather (3.6 s, 1719 tok) | completed → Weather (3.4 s, 445 tok) |
 | Find a room in LA, CA, April 15-18, 2026, two ad | completed → Airbnb (12.7 s, 2429 tok) | input-required → Airbnb (12.5 s, 460 tok) |

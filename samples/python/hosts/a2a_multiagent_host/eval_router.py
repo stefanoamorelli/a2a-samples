@@ -158,6 +158,13 @@ def summarize(rows: list[dict[str, Any]], price_in: float, price_out: float) -> 
     }
 
 
+def confidence_cell(s: dict[str, Any]) -> str:
+    """Mean confidence when right / when wrong."""
+    right = f'{s["confidence_right"] or 0:.2f}'
+    wrong = '-' if s['confidence_wrong'] is None else f'{s["confidence_wrong"]:.2f}'
+    return f'{right} / {wrong}'
+
+
 def pct(x: float | None) -> str:
     """Percent or dash."""
     return '-' if x is None else f'{x * 100:.0f}%'
@@ -170,11 +177,7 @@ def decisions_table(summaries: dict[str, dict[str, Any]]) -> str:
         ('requests', lambda s: str(s['n'])),
         ('accuracy', lambda s: pct(s['accuracy'])),
         ('abstains on requests nothing covers', lambda s: pct(s['none_recall'])),
-        (
-            'mean confidence when right / wrong',
-            lambda s: f'{s["confidence_right"] or 0:.2f} / '
-            + ('-' if s['confidence_wrong'] is None else f'{s["confidence_wrong"]:.2f}'),
-        ),
+        ('mean confidence when right / wrong', confidence_cell),
         (
             'confidence >= 0.9: coverage / accuracy',
             lambda s: f'{pct(s["gated_coverage"])} / {pct(s["gated_accuracy"])}',
@@ -219,6 +222,7 @@ def cli() -> None:
 )
 @click.option('--out', 'out_path', type=click.Path(path_type=Path), default=None)
 def decisions(  # noqa: PLR0913 - one parameter per flag
+    *,
     cards_dir: Path,
     requests_path: Path,
     workers: int,
@@ -272,7 +276,7 @@ def decisions(  # noqa: PLR0913 - one parameter per flag
         click.echo(f'running {name} on {len(requests)} requests ...', err=True)
         return await asyncio.gather(*(one(r) for r in requests))
 
-    async def main() -> None:
+    async def main() -> dict[str, Any]:
         results: dict[str, Any] = {}
         results['jev'] = await score('jev', lambda text: jev_decide(router, text, cards))
         if gemini is not None:
@@ -286,13 +290,12 @@ def decisions(  # noqa: PLR0913 - one parameter per flag
         }
         summaries = {name: summarize(rows, *prices[name]) for name, rows in results.items()}
         click.echo(decisions_table(summaries))
-        if out_path:
-            out_path.write_text(
-                json.dumps({'summaries': summaries, 'rows': results}, indent=2) + '\n'
-            )
-            click.echo(f'wrote {out_path}', err=True)
+        return {'summaries': summaries, 'rows': results}
 
-    asyncio.run(main())
+    payload = asyncio.run(main())
+    if out_path:
+        out_path.write_text(json.dumps(payload, indent=2) + '\n')
+        click.echo(f'wrote {out_path}', err=True)
 
 
 # --- hosts ------------------------------------------------------------------------------
@@ -385,6 +388,7 @@ async def ask_host(client: httpx.AsyncClient, card: AgentCard, text: str) -> dic
 @click.option('--jev-price', default=0.042, show_default=True, help='USD per million input tokens')
 @click.option('--out', 'out_path', type=click.Path(path_type=Path), default=None)
 def hosts(  # noqa: PLR0913 - one parameter per flag
+    *,
     llm_host: str,
     jev_host: str,
     queries: tuple[str, ...],
@@ -394,7 +398,7 @@ def hosts(  # noqa: PLR0913 - one parameter per flag
 ) -> None:
     """The LLM-routed host versus the Jev-routed host, end to end."""
 
-    async def main() -> None:
+    async def main() -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=180) as client:
             llm_card = await A2ACardResolver(client, llm_host).get_agent_card()
             jev_card = await A2ACardResolver(client, jev_host).get_agent_card()
@@ -428,10 +432,11 @@ def hosts(  # noqa: PLR0913 - one parameter per flag
             )
             lines.append(f'| **same agent chosen** | {agree} of {len(rows)} | |')
             click.echo('\n'.join(lines))
-            if out_path:
-                out_path.write_text(json.dumps({'rows': rows}, indent=2) + '\n')
+            return {'rows': rows}
 
-    asyncio.run(main())
+    payload = asyncio.run(main())
+    if out_path:
+        out_path.write_text(json.dumps(payload, indent=2) + '\n')
 
 
 if __name__ == '__main__':

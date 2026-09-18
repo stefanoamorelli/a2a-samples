@@ -25,12 +25,16 @@ load_dotenv()
 
 logging.basicConfig()
 
-DEFAULT_HOST = '0.0.0.0'
+DEFAULT_HOST = '0.0.0.0'  # noqa: S104 - the sample listens on all interfaces on purpose
 DEFAULT_PORT = 8083
 
 
-def main(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, router: str = 'llm'):
-    # router 'llm' (default) routes with the ADK Gemini agent; 'jev' asks TypeSafe's Jev
+def main(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, router: str = 'llm') -> None:
+    """Start the host A2A server.
+
+    ``router`` is ``llm`` (the ADK Gemini agent, the default) or ``jev`` (TypeSafe's Jev picks
+    the remote agent and the host forwards the message, with no LLM in the loop).
+    """
     # which remote agent to use and forwards the message, with no LLM in the loop.
     if (
         router == 'llm'
@@ -109,7 +113,8 @@ def main(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT, router: str = 'llm'
     default=lambda: os.getenv('HOST_ROUTER', 'llm'),
     show_default='HOST_ROUTER or llm',
 )
-def cli(host: str, port: int, router: str):
+def cli(host: str, port: int, router: str) -> None:
+    """Run the host A2A server."""
     main(host, port, router)
 
 
